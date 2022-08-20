@@ -38,11 +38,15 @@ contract SplitWise {
             ledgerArr[debtorMap[msg.sender].id].IOUs.push(_IOU);
         }
         else{ // update IOU
+            require(ledger[msg.sender][_creditor].amount + _amount >= 0, "tx results to negative IOU.");
             ledger[msg.sender][_creditor].amount += _amount;
             ledgerArr[debtorMap[msg.sender].id].IOUs[ledger[msg.sender][_creditor].creditor_id].amount += _amount; 
             if (ledger[msg.sender][_creditor].amount == 0){
                 ledger[msg.sender][_creditor]._valid = false;
                 ledgerArr[debtorMap[msg.sender].id].IOUs[ledger[msg.sender][_creditor].creditor_id]._valid = false;
+            } else {
+                ledger[msg.sender][_creditor]._valid = true;
+                ledgerArr[debtorMap[msg.sender].id].IOUs[ledger[msg.sender][_creditor].creditor_id]._valid = true;
             }
         }
     }
