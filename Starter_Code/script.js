@@ -91,7 +91,7 @@ var abi = [
 abiDecoder.addABI(abi);
 // call abiDecoder.decodeMethod to use this - see 'getAllFunctionCalls' for more
 
-var contractAddress = '0x642E4fb182B995C70f3A9ef99Dc994F1753B9Cd7'; // FIXME: fill this in with your contract's address/hash
+var contractAddress = '0x668A0d3276aDca75e4aE5B9fA23BD5e64e2619f1'; // FIXME: fill this in with your contract's address/hash
 var BlockchainSplitwise = new web3.eth.Contract(abi, contractAddress);
 
 // =============================================================================
@@ -156,33 +156,22 @@ async function getTotalOwed(user) {
 // HINT: Try looking at the way 'getAllFunctionCalls' is written. You can modify it if you'd like.
 async function getLastActive(user) {
 	var curBlock = await web3.eth.getBlockNumber();
-	var function_calls = [];
 
 	while (curBlock !== GENESIS) {
 	  var b = await web3.eth.getBlock(curBlock, true);
+	  var timestamp = b.timestamp;
 	  var txns = b.transactions;
 	  for (var j = 0; j < txns.length; j++) {
 	  	var txn = txns[j];
 
 	  	// check that destination of txn is our contract
-			if(txn.to == null){continue;}
-	  	if (txn.to.toLowerCase() === addressOfContract.toLowerCase()) {
-	  		var func_call = abiDecoder.decodeMethod(txn.input);
-
-				// check that the function getting called in this txn is 'functionName'
-				if (func_call && func_call.name === functionName) {
-					var time = await web3.eth.getBlock(curBlock);
-	  			var args = func_call.params.map(function (x) {return x.value});
-	  			function_calls.push({
-	  				from: txn.from.toLowerCase(),
-	  				args: args,
-						t: time.timestamp
-	  			})
-	  		}
+	  	if (txn.to.toLowerCase() === user.toLowerCase() || txn.from.toLowerCase() === user.toLowerCase() ) {
+			return timestamp;
 	  	}
 	  }
 	  curBlock = b.parentHash;
 	}
+	return null;
 }
 
 // TODO: add an IOU ('I owe you') to the system
