@@ -18,7 +18,7 @@ contract SplitWise {
     mapping (address => Debtor) debtorMap; // faster access 
     Debtor[] ledgerArr; // debtors to array of creditors, return with less gas.
     
-    function add_IOU(address _creditor, int32 _amount) public { // negative IOU is to resolve the loop
+    function add_IOU(address _creditor, int32 _amount) public returns (bool res){ // negative IOU is to resolve the loop
         require(msg.sender != _creditor, "One cannot owes to themself.");
         // * ignore case that ledger minus amount < 0 => error
         if (debtorMap[msg.sender]._valid == false){ // new user; index ledgerArr by map address to id in debtorMap
@@ -31,11 +31,13 @@ contract SplitWise {
             debtor._valid = true;
             ledgerArr.push(debtor);
             debtorMap[msg.sender] = debtor;
+            return true;
         }
         else if (ledger[msg.sender][_creditor]._valid == false) { // debtor's new creditor
             IOU memory _IOU = IOU({creditor: _creditor, amount: _amount, creditor_id: ledgerArr[debtorMap[msg.sender].id].IOUs.length, _valid: true});
             ledger[msg.sender][_creditor] = _IOU;
             ledgerArr[debtorMap[msg.sender].id].IOUs.push(_IOU);
+            return true;
         }
         else{ // update IOU
             require(ledger[msg.sender][_creditor].amount + _amount >= 0, "tx results to negative IOU.");
@@ -48,10 +50,16 @@ contract SplitWise {
                 ledger[msg.sender][_creditor]._valid = true;
                 ledgerArr[debtorMap[msg.sender].id].IOUs[ledger[msg.sender][_creditor].creditor_id]._valid = true;
             }
+            return true;
         }
+        return false;
     }
 
     function getLedger() public view returns(Debtor[] memory _ledgerArr){
         return ledgerArr;
+    }
+
+    function lookup(address debtor, address creditor) public view returns(int32 ret){
+        return ledger[debtor][creditor].amount;
     }
 }

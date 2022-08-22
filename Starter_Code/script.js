@@ -24,7 +24,13 @@ var abi = [
 			}
 		],
 		"name": "add_IOU",
-		"outputs": [],
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "res",
+				"type": "bool"
+			}
+		],
 		"stateMutability": "nonpayable",
 		"type": "function"
 	},
@@ -84,6 +90,30 @@ var abi = [
 		],
 		"stateMutability": "view",
 		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "debtor",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "creditor",
+				"type": "address"
+			}
+		],
+		"name": "lookup",
+		"outputs": [
+			{
+				"internalType": "int32",
+				"name": "ret",
+				"type": "int32"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
 	}
 ]; // FIXME: fill this in with your contract's ABI //Be sure to only have one array, not two
 
@@ -91,7 +121,7 @@ var abi = [
 abiDecoder.addABI(abi);
 // call abiDecoder.decodeMethod to use this - see 'getAllFunctionCalls' for more
 
-var contractAddress = '0x668A0d3276aDca75e4aE5B9fA23BD5e64e2619f1'; // FIXME: fill this in with your contract's address/hash
+var contractAddress = '0xA691a0607fc6f25C589F5629C006A8618ADAF8E5'; // FIXME: fill this in with your contract's address/hash
 var BlockchainSplitwise = new web3.eth.Contract(abi, contractAddress);
 
 // =============================================================================
@@ -178,7 +208,9 @@ async function getLastActive(user) {
 // The person you owe money is passed as 'creditor'
 // The amount you owe them is passed as 'amount'
 async function add_IOU(creditor, amount) {
-	let ret = await doBFS(creditor, web3.eth.defaultAccount, getNeighbors); // start is creditor, end is debtor
+	var ret = await doBFS(creditor, web3.eth.defaultAccount, getNeighbors); // start is creditor, end is debtor
+	amount = parseInt(amount, 10);
+	var response = false;
 	if (ret != null){
 		let {loop, smallestAmountOwed} = ret;
 		smallestAmountOwed = Math.min(parseInt(smallestAmountOwed, 10), amount);
@@ -189,11 +221,11 @@ async function add_IOU(creditor, amount) {
 			}
 		}
 		for (var i = 0; i < loop.length - 1; i++){
-			BlockchainSplitwise.methods.add_IOU(loop[i + 1]["creditor"], -smallestAmountOwed).send({from: loop[i]["creditor"], gas: 500000});
+			response = await BlockchainSplitwise.methods.add_IOU(loop[i + 1]["creditor"], -smallestAmountOwed).send({from: loop[i]["creditor"], gas: 500000});
 		}
-		BlockchainSplitwise.methods.add_IOU(creditor, amount - smallestAmountOwed).send({from: web3.eth.defaultAccount, gas: 500000});
+		response = await BlockchainSplitwise.methods.add_IOU(creditor, amount - smallestAmountOwed).send({from: web3.eth.defaultAccount, gas: 500000});
 	} else {
-		BlockchainSplitwise.methods.add_IOU(creditor, amount).send({from: web3.eth.defaultAccount, gas: 500000}); // refer to dev note for this magic gas limit
+		response = await BlockchainSplitwise.methods.add_IOU(creditor, amount).send({from: web3.eth.defaultAccount, gas: 500000}); // refer to dev note for this magic gas limit
 	}
 }
 
